@@ -1,13 +1,15 @@
 from PIL import Image
 import numpy as np
 
-# run a filter over the image in the path:
-path = 'Bikesgray.jpg'
-
 sharpen = np.array(
     [[+0, -1, 0],
      [-1, +5, -1],
      [+0, -1, 0]])
+
+laplacian = np.array(
+    [[+0, +1, +0],
+     [+1, -4, +1],
+     [+0, +1, +0]])
 
 gaussian = np.array(
     [[1, 2, 1],
@@ -41,7 +43,7 @@ def convolve(A, kernel):
     memory_offset = [*A.strides[:2], *A.strides]
     samples = np.lib.stride_tricks.as_strided(A, shape=shape, strides=memory_offset)
 
-    # Contract over first two dimensions
+    # Contract over first two dimensions (note that samples is a 5-dimensional array)
     return np.einsum("ij...,ij->...", samples, kernel)
 
 
@@ -59,12 +61,16 @@ def sobel(A):
     return np.sqrt(convolve(A, sobel_x)**2 + convolve(A, sobel_y)**2)
 
 
-# Load image into array
-data = np.array(Image.open(path)).astype(float)
+if __name__ == '__main__':
+    # run a filter over the image in the path:
+    path = 'Bikesgray.jpg'
 
-# Apply operator
-convolved = convolve(data, emboss)
-# convolved = sobel(data)
+    # Load image into array
+    data = np.array(Image.open(path)).astype(float)
 
-# Convert back to image and show
-Image.fromarray(np.clip(convolved, 0, 255).astype(np.uint8)).show()
+    # Apply operator
+    convolved = convolve(data, emboss)
+    # convolved = sobel(data)
+
+    # Convert back to image and show
+    Image.fromarray(np.clip(convolved, 0, 255).astype(np.uint8)).show()
