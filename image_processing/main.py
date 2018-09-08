@@ -1,6 +1,3 @@
-from pymongo import MongoClient
-from io import BytesIO
-
 import numpy as np
 from PIL import Image
 
@@ -11,15 +8,6 @@ from image_processing.canny import canny_mask
 from image_processing.difference_of_gaussians import difference_of_gaussians
 
 use_landscape = True
-
-
-def get_image():
-    if use_landscape:
-        return Image.open(r'C:\Users\mike\Desktop\landscape.jpg')
-
-    record = list(db.ebay.aggregate([{"$sample": {"size": 1}}]))[0]
-    print(record['title'])
-    return Image.open(BytesIO(record['image']))
 
 
 def test_canny(im):
@@ -46,15 +34,17 @@ def test_difference_of_gaussian(im, depth, bound):
 
 
 if __name__ == '__main__':
+    # run on the image in the path:
+    path = 'Bikesgray.jpg'
 
-    mongo_client = MongoClient(host='localhost', port=27017)  # Default port
-    db = mongo_client.deep_fashion
+    # Load image into array
+    data = np.array(Image.open(path)).astype(float)
 
     depth = 0
     while True:
-        # Actually run the segmentation
+        # progressive image segmentation
         bound = 100
-        test_difference_of_gaussian(get_image(), depth, bound)
+        test_difference_of_gaussian(data, depth, bound)
         depth += 10
         if depth == bound:
             break

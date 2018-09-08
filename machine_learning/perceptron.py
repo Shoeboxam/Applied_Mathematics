@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 import os
-# because I don't want the hardware specs logged in red, every time I run
+# because I don't want the hardware specs logged in red every time I run
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 iterations = 10
