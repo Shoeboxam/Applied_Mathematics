@@ -24,11 +24,11 @@ def deterministic(U, S, V=None):
 
 
 def pca_example(data):
-
-    U, S, V = deterministic(*np.linalg.svd(data - np.mean(data, axis=0)))
+    centered = data - np.mean(data, axis=0)
+    U, S, V = deterministic(*np.linalg.svd(centered))
 
     print('\n\nEquivalent SVD after adjusting order/vectors/signs?')
-    print(np.allclose(data, U @ np.diag(S) @ V))
+    print(np.allclose(centered, U @ np.diag(S) @ V))
 
     pca = PCA(n_components=3)
     pca.fit(data)
