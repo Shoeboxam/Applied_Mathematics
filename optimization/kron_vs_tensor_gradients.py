@@ -1,7 +1,7 @@
 import timeit
 import numpy as np
 
-# this is a algorithmic complexity comparison of vectorized matrix derivatives, vs tensor based derivatives
+# this is an algorithmic complexity comparison of vectorized matrix derivatives, vs tensor based derivatives
 
 dimensions = [10, 100]
 
@@ -24,11 +24,25 @@ def gradient_tensor():
     return (e - A @ b) @ b.T
 
 
-trials = 1000
-print("Matrix Derivative Time")  # 0.1345 seconds
-print(timeit.timeit('gradient_matrix()', 'from __main__ import gradient_matrix', number=trials))
-print("Tensor Derivative Time")  # 0.0034 seconds
-print(timeit.timeit('gradient_tensor()', 'from __main__ import gradient_tensor', number=trials))
+def time_test(trials):
+    print("Matrix Derivative Time")  # 0.1345 seconds
+    print(timeit.timeit('gradient_matrix()', 'from __main__ import gradient_matrix', number=trials))
+    print("Tensor Derivative Time")  # 0.0034 seconds
+    print(timeit.timeit('gradient_tensor()', 'from __main__ import gradient_tensor', number=trials))
 
-print("\nAre matrices the same?")
-print(np.allclose(gradient_matrix(), gradient_tensor()))
+    print("\nAre matrices the same?")
+    print(np.allclose(gradient_matrix(), gradient_tensor()))
+
+
+def vectorization_test():
+    W = np.random.normal(size=(5, 4))
+    s = np.random.uniform(size=(4, 2))
+
+    method1 = np.kron(s.T, np.eye(W.shape[0])) @ np.reshape(W, (-1, 1), order='F')
+    method2 = np.reshape(W @ s, (-1, 1), order='F')
+
+    print('[s.T ⊗ I] vec(W) == Ws')
+    print(np.allclose(method1, method2))
+
+
+time_test(trials=1000)
