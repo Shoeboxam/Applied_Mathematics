@@ -1,24 +1,12 @@
 from scipy import cluster
-import numpy as np
+from machine_learning.utilities import make_clusters
 import matplotlib.pyplot as plt
 
 # Used for 3D plotting, but not directly invoked
 from mpl_toolkits.mplot3d import Axes3D
 
-
 # ~~~~ Generate a dataset ~~~~
-# Generate a positive semidefinite covariance matrix for each cluster
-rand = np.random.uniform(-1, 1, size=(3, 3))
-covariance_1 = rand @ rand.T
-source_one = np.random.multivariate_normal((2, 1, 8), covariance_1, size=40)
-
-rand = np.random.uniform(-1, 1, size=(3, 3))
-covariance_2 = rand @ rand.T
-source_two = np.random.multivariate_normal((4, 0, 6), covariance_2, size=20)
-
-# Combine the two point sets and shuffle their points (rows)
-dataset = np.vstack((source_one, source_two))
-np.random.shuffle(dataset)
+dataset = make_clusters([{'mean': [2, 1, 8], 'n': 20}, {'mean': [4, 0, 6], 'n': 40}])
 
 
 # ~~~~ K-Means Clustering ~~~~
