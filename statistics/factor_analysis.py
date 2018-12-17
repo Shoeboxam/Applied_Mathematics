@@ -2,6 +2,16 @@
 # compare against loadings from principal factor, factor analysis from sklearn
 # compare varimax transformed loadings
 
+
+# Equivalence to R:
+# the principal component factor analysis returns equivalent values to R Psych principal
+# the principal factor, factor analysis returns equivalent values to R Psych factanal
+
+# library(psych)
+# print(factanal(data_subset, factors=2, rotation="varimax"))
+# print(principal(data_subset, nfactors=1, rotate="none"))
+
+
 import numpy as np
 import pandas as pd
 import requests

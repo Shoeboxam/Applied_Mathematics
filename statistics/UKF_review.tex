@@ -1,0 +1,165 @@
+\documentclass{article}
+\begin{document}
+\title{Unscented Filtering and Nonlinear Estimation Paper Review}
+\date{}
+\maketitle
+\section{Introduction}
+The Kalman filter is designed to reduce the influence of noise on nonstationary, multivariate time series data. The original 'simple' Kalman filter proposed by Rudolf E. Kalman in 1960 is capable of filtering noise from time series data, but is restricted to linear models in the predictive step [1]. By predictive step, I specifically mean the process of finding an estimated value for time $t + 1$ when given data from time $t$. An example of a model that meets the linearity requirements in the predictive step is a kinematic model:
+
+\[
+   D_{t+1} = D_t + V_t \Delta t + \frac{A_t\Delta t^2}{2}
+\]
+\[
+   V_t = \frac{D_t - D_{t - 1}}{\Delta t}
+\]
+\[
+   A_t = \frac{V_t - V_{t - 1}}{\Delta t}
+\]
+
+$D_{t}$ represents the estimated location at time t, $V_t$ the velocity, and $A_t$ the acceleration. This model uses finite difference methods to approximate the higher order derivatives, which works well within the discrete-time framework of Kalman filters. Henceforth references to \textit{Unscented Filtering and Nonlinear Estimation} are denoted (UFNE) in text or by [2].
+
+\section{Kalman Filter Parameters}
+The Kalman filter is a dynamical system that maintains internal estimates of a mean $\hat X$ and covariance $\hat \Sigma$ at each time step. The parameters for the distribution are perturbed at each time step. In this example the state $\hat X$ will represent the position ($x, y$) and velocity ($\dot x, \dot y$).
+
+\[
+   \hat X =
+  \left[ {\begin{array}{c}
+   x \\
+   y \\
+   \dot x \\
+   \dot y \\
+  \end{array} } \right]
+\]
+The kinematics model is rewritten:
+\[
+	\hat X_t = \left[ {\begin{array}{cccc}
+   1 & 0 & \Delta t & 0 \\
+   0 & 1 & 0 & \Delta t \\
+   0 & 0 & 1 & 0 \\
+   0 & 0 & 0 & 1 \\
+  \end{array} } \right] \left[ {\begin{array}{c}
+   x_{t - 1} \\
+   y_{t - 1} \\
+   \dot x_{t - 1} \\
+   \dot y_{t - 1} \\
+  \end{array} } \right] + \left[ {\begin{array}{cc}
+   \frac{\Delta t^2}{2} & 0 \\
+   0 & \frac{\Delta t^2}{2} \\
+   \Delta t & 0 \\
+   0 & \Delta t \\
+  \end{array} } \right] \left[ {\begin{array}{c}
+   a_x \\
+   a_y \\
+  \end{array} } \right]
+\]
+This lends to the matrix form:
+\[
+	\hat X_t = B \hat X_{t - 1} + C A_t
+\]
+We also need to find the variance-covariance matrix $\hat \Sigma_t$. Notice if we assume constant acceleration, then $CA_t$ is not a random variable, so $var(CA_t) = 0$ and $cov(A \hat X_{t - 1}, C A_t) = 0$.
+\[
+	\hat \Sigma_{t} = var(\hat X_t) = var(B \hat X_{t - 1}) = cov(B \hat X_{t - 1}, B \hat X_{t-1}) = B \ var(\hat X_{t - 1}) B^T
+\]
+We already know $var(\hat X_{t - 1}) = \hat \Sigma_{t - 1}$, so substitute:
+\[
+	\hat \Sigma_t = B \hat \Sigma_{t - 1} B^T
+\]
+These formulas are useful for updating the state of the 'simple' Kalman Filter, and are mentioned in \textit{UFNE I.2}.
+
+\section{Fuse Data}
+The smoothed data is a weighted average of the mean of the distribution estimated by the Kalman Filter and the measurement. The weight $W$ is called the Kalman Gain, a ratio of confidences. $Z_t$ is the measurement and $S_t$ is the measurement variance. These formulas are adapted, for readability, from the problem statement \textit{UFNE II.A Applying the KF to Nonlinear Systems}.
+\[
+	W_t = \hat \Sigma_t S_t^{-1}
+\]
+Use the Kalman Gain to weight the measured data into the model predictions.
+\[
+	\hat X_t = W_t Z_t + (I - W_t) \hat X_t
+\]
+\[
+	\hat \Sigma_t = (I - W_t) \hat \Sigma_t (I - W_t)^T
+\]
+The Kalman filter is a recursive algorithm, these weighted estimates will be used in the next time step.
+
+\section{Nonlinear Models}
+The kinematics model works well with the Kalman filter because the update is a linear transformation, so taking $cov(\hat X_t)$ was a straightforward application of covariance properties. Now consider the nonlinear model $\psi$, where $\hat X_t = \psi(\hat X_{t-1})$.
+\[
+	\hat \Sigma_t = var(\psi(X_{t-1}))
+\]
+The core issue is "propagating means and covariances through nonlinear transformations," presented in \textit{UFNE II.B}. There are two primary methods to estimate $\hat \Sigma_t$. The first is the Extended Kalman Filter (EKF). The nonlinear model $\psi$ may be approximated by a Taylor series. The EKF uses this first order Taylor series approximation to linearize the model (at the price of accuracy) to estimate the updated covariance matrix. The second and higher order terms are assumed to be negligible.
+\[
+	A = \frac{\partial \psi(\hat X_{t - 1})}{\partial \hat X_{t-1}}
+\]
+% \[
+% 	\hat X_t \approx \psi (\hat X_{t - 1} + \epsilon) + A(\hat X_{t - 1} + \epsilon)
+% \]
+\[
+	\hat \Sigma_t = A \hat \Sigma_{t - 1}A^T
+\]
+
+UFNE proposes the second primary method of propagating means and covariances through a nonlinear transformation. This method is then used to construct the unscented Kalman filter. The central idea is summarized by the author:
+
+\textit{It is easier to approximate a probability distribution than it is to approximate an abritrary nonlinear function or transformation.} [UFNE III.A]
+
+The state of the Kalman filter represents a probability distribution. Careful selection of $2p$ data points from the prior distribution yields a new discrete distribution that shares the same mean and covariance as the original data. If every point in the discrete distribution is passed through $\psi$, the mean and covariance of the transformed points will approximate $\hat X_t$ and $\hat \Sigma_t$. One such system for selecting sigma points is to perturb $\bar x$ with the nth row of the square root of the covariance matrix (Cholesky):
+\[
+	x^{(i)} = \bar x + (\sqrt{N_x \Sigma_x})_i
+\]
+\[
+	x^{(i + N_x)} = \bar x - (\sqrt{N_x \Sigma_x})_i
+\]
+
+\[
+	\hat \Sigma = \sum_{i=1}^{p} W^{(i)}(\hat x^{(i)} - E[W\hat x]) (\hat x^{(i)} - E[W\hat x])^T
+\]
+
+The $W^{(i)}$ vector represents a weight for each element. The weights are constrained by:
+\[
+	\sum^{p}_{i=1} W^{(i)} = 1
+\]
+\[
+	W^{(i)} = N_x / 2
+\]
+\[
+	W^{(i + N_x)} = N_x / 2
+\]
+
+There are many systems for selecting sigma-points.
+
+The author provides a helpful example of a nonlinear function that exhibits bias in previous models. A motion sensor typically has low variance in the depth reading and high variance in the bearing measurement. A nonlinear transform from the original polar space to the rectangular space, in order to take advantage of models in rectangular coordinate space, induces significant bias in the estimates of the mean and covariance [2 II.C III.B]. The UKF fixes bias in the mean and reduces bias in the covariance.
+
+% \[
+%   \left[ {\begin{array}{c}
+%    x \\
+%    y \\
+%   \end{array} } \right] =
+%   \left[ {\begin{array}{c}
+%    r cos(\theta) \\
+%    r sin(\theta) \\
+%   \end{array} } \right]
+% \]
+
+\section{Conclusion}
+
+There are many benefits to the unscented transform (UT). The UT works as a 'black box,' because it does not require the computation of derivatives. Thus the same algorithm may be applied to any nonlinear, discontinous function. Another benefit is that the UT does not increase computational complexity over the original KF. From my reading, higher order moments may also be estimated via more complex sigma point schemes. An attractive feature of all models in the class of Kalman filters is that they may be run in real-time, at each time step.
+
+It is important to note that this paper not only creates a scheme for filtering of nonlinear models, but it introduces a method for the propagation of descriptive statistics through nonlinear transormations, which is certainly applicable to other research topics.
+
+The Kalman filter is a member of a class of dynamical systems with continuous variables. Thus a drawback to the Kalman filter is that it is not capable of modeling discrete space. An algorithm with similar structure, the Hidden Markov Model, must be used instead.
+
+Another drawback to the unscented Kalman filter is numerical precision and stability in several parts of the algorithm. If the measurements have a large range/are poorly scaled, then the Kalman filter can become ill-conditioned [3 section 6.2.4, P209]. There is also practical considerations on the proposed method of selecting sigma points. A matrix inverse is required to compute the perturbation from $\bar x$, which has can be numerically unstable if the estimated covariance matrix is ill-conditioned. Alternative methods have been discussed to address this problem.
+
+\begin{thebibliography}{999}
+
+\bibitem{kalman70}
+  Kalman RE,
+  \emph{A New Approach to Linear Filtering and Prediction Problems}. ASME. J. Basic Eng. 1960;82(1):35-45. doi:10.1115/1.3662552.
+
+\bibitem{julier2004}
+  Simon J. Julier, Jeffrey K. Uhlmann, \emph{Unscented Filtering and Nonlinear Estimation}, Proceedings of the IEEE, vol. 92, iss. 3, pp. 401-422, 2004.
+
+\bibitem{grewal01}
+M. Grewal and A. Andrews, Kalman Filtering : Theory and Practice Using MATLAB, 2nd ed. Wiley-Interscience, Jan. 2001.
+
+\end{thebibliography}
+
+\end{document}
