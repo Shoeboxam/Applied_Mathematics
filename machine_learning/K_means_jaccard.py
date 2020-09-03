@@ -47,18 +47,18 @@ class KMeans(object):
             centroids = set()
 
             for cluster in voronoi:
-                distances = []
-                for point in voronoi[cluster]:
-                    distances.append(sum(self.distance(point, other)**2 for other in voronoi[cluster]))
-                centroids.add(voronoi[cluster][min(enumerate(distances), key=lambda d: d[1])[0]])
+                centroids.add(min(
+                    voronoi[cluster],
+                    key=lambda point: sum(self.distance(point, other)**2 for other in voronoi[cluster])
+                ))
 
-            if set(self.centroids) == centroids:
+            if self.centroids == centroids:
                 break
 
-            self.centroids = list(centroids)
+            self.centroids = centroids
 
     def classify(self, point):
-        return self.centroids[min(enumerate(self.centroids), key=lambda c: self.distance(point, c[1]))[0]]
+        return min(self.centroids, key=lambda c: self.distance(point, c))
 
     def sse(self, data):
         return sum(self.distance(self.classify(point), point)**2 for point in data)
