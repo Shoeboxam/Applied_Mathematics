@@ -29,30 +29,28 @@ def distance_sentences(id1, id2):
 
 
 class KMeans(object):
-    def __init__(self, distance, seeds, loss=None):
-        self.distance = distance
-        self.loss = loss or (lambda data: sum(self.distance(*pair)**2 for pair in data))
+    def __init__(self, seeds, distance, loss=None, center=None):
         self.centroids = set(seeds)
+
+        self.distance = distance or (lambda x, y: abs(x - y))
+        self.loss = loss or (lambda data: sum(self.distance(*pair)**2 for pair in data))
+        self.center = center or (lambda data: min(data, key=lambda point: self.loss((point, other) for other in data)))
 
     def fit(self, data):
 
         while True:
             print(f'Sum Squared Error: {self.score(data)}')
-            voronoi = defaultdict(list)
 
             # label each point
+            voronoi = defaultdict(list)
             for observation in data:
                 voronoi[self.classify(observation)].append(observation)
 
             # recompute centroids
-            centroids = {
-                min(cluster, key=lambda point: self.loss((point, other) for other in cluster))
-                for cluster in voronoi.values()
-            }
+            centroids = set(map(self.center, voronoi.values()))
 
             if self.centroids == centroids:
                 break
-
             self.centroids = centroids
 
     def classify(self, point):
@@ -62,7 +60,7 @@ class KMeans(object):
         return self.loss((self.classify(point), point) for point in data)
 
 
-model = KMeans(distance_sentences, seeds)
+model = KMeans(seeds, distance_sentences)
 model.fit(range(len(sentence_dict)))
 
 labels = defaultdict(list)
