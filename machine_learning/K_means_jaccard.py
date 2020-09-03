@@ -44,13 +44,10 @@ class KMeans(object):
                 voronoi[self.classify(observation)].append(observation)
 
             # recompute centroids
-            centroids = set()
-
-            for cluster in voronoi:
-                centroids.add(min(
-                    voronoi[cluster],
-                    key=lambda point: sum(self.distance(point, other)**2 for other in voronoi[cluster])
-                ))
+            centroids = {min(
+                cluster,
+                key=lambda point: sum(self.distance(point, other)**2 for other in cluster)
+            ) for cluster in voronoi.values()}
 
             if self.centroids == centroids:
                 break
